@@ -12,6 +12,8 @@ const int leftPin = 19;
 const int rightPin = 20;
 const int attackPin = 21;
 
+const float sensitivityPercentageBack = 0.5;
+const float sensitivityPercentage =0.5;
 // Controller pointer
 ControllerPtr myControllers[BP32_MAX_GAMEPADS];
 
@@ -78,26 +80,29 @@ void onDisconnectedController(ControllerPtr ctl) {
 
 void processJoysticks(ControllerPtr ctl) {
   // Control the wheels using the joystick
-  int yAxis = ctl->axisY(); // Assuming this is the Y-axis for forward/backward
-  int xAxis = ctl->axisX(); // Assuming this is the X-axis for left/right
+  int yAxisLeft = ctl->axisY(); // Assuming this is the Y-axis for forward/backward
+  int xAxisLeft = ctl->axisX(); // Assuming this is the X-axis for left/right
+  int xAxisRight = ctl->axisRX();
 
   // Map the joystick values
   // Joystick range from -512 to 512
-  float joystickValue = map(yAxis, -512, 512, 1, 10); // Map to 1-10 range
+  float joystickValue = map(yAxisRight, -512, 512, 1, 10); // Map to 1-10 range
   int escValue = map(joystickValue, 1, 10, 1000, 2000); // Map to ESC PWM range
 
-  // Debugging: Print joystick values
-  Serial.print("Joystick Y-axis value: ");
-  Serial.println(joystickValue);
+  //stuff for arcade drive
+  int processedLeft = yAxisLeft - (xAxisRight * sensitivityPercentage);
+  int processedRight = yAxisLeft + (xAxisRight * sensitivityPercentage);
+  int processedBack = xAxisRight * sensitivityPercentageBack
+
+  int mappedLeft = map(processedLeft, -512, 512, 1000, 2000);
+  int mappedRight = map(processedRight, -512, 512, 1000, 2000);
+  int mappedBack = map(processedBack,-512,512,1000,2000);
+
   
   // Set speeds for the omni wheel and left/right wheels
-  escOmni.writeMicroseconds(escValue);
-  escLeft.writeMicroseconds(escValue);
-  escRight.writeMicroseconds(escValue);
-
-  // Optionally print the ESC PWM value for debugging
-  Serial.print("ESC PWM value: ");
-  Serial.println(escValue);
+  escOmni.writeMicroseconds(mappedBack);
+  escLeft.writeMicroseconds(mappedLeft);
+  escRight.writeMicroseconds(mappedRight);
 }
 
 void processAttackMotor(ControllerPtr ctl) {
